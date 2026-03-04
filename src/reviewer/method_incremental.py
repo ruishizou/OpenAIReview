@@ -10,6 +10,7 @@ equations, theorems, and key claims. For each passage:
 
 import json
 import re
+from datetime import date
 
 from .client import chat
 from .models import ReviewResult
@@ -73,6 +74,7 @@ def merge_into_passages(
 
 DEEP_CHECK_PROMPT = """\
 You are a thoughtful reviewer checking a passage from an academic paper. \
+Today's date is {current_date}. \
 Engage deeply with the material. For each potential issue, first try to understand the authors' \
 intent and check whether your concern is resolved by context before flagging it.
 
@@ -382,11 +384,11 @@ def review_incremental(
             context = window_context
 
         # Step 1: Deep-check
-        prompt = DEEP_CHECK_PROMPT.format(context=context, passage=passage_text)
+        prompt = DEEP_CHECK_PROMPT.format(context=context, passage=passage_text, current_date=date.today().isoformat())
         response, usage = chat(
             messages=[{"role": "user", "content": prompt}],
             model=model,
-            max_tokens=4096,
+            max_tokens=16384,
             reasoning_effort=reasoning_effort,
         )
         result.raw_responses.append(response)
@@ -395,22 +397,26 @@ def review_incremental(
 
         # Parse comments
         new_comments = []
-        arr_match = re.search(r"\[.*\]", response, re.DOTALL)
-        if arr_match:
-            try:
-                items = json.loads(arr_match.group(0))
-                new_comments = parse_comments_from_list(items)
-                # Locate each comment within the passage's paragraphs
-                passage_paras = [paragraphs[i] for i in para_indices]
-                for c in new_comments:
-                    located = locate_comment_in_document(c.quote, passage_paras)
-                    if located is not None and located < len(para_indices):
-                        c.paragraph_index = para_indices[located]
-                    else:
-                        c.paragraph_index = para_indices[0]
-                all_comments.extend(new_comments)
-            except json.JSONDecodeError:
-                pass
+        if not response.strip():
+            print(f"    WARNING: Empty response for passage {idx+1}/{len(passages)} "
+                  f"(model={model}). No comments extracted from this passage.")
+        else:
+            arr_match = re.search(r"\[.*\]", response, re.DOTALL)
+            if arr_match:
+                try:
+                    items = json.loads(arr_match.group(0))
+                    new_comments = parse_comments_from_list(items)
+                    # Locate each comment within the passage's paragraphs
+                    passage_paras = [paragraphs[i] for i in para_indices]
+                    for c in new_comments:
+                        located = locate_comment_in_document(c.quote, passage_paras)
+                        if located is not None and located < len(para_indices):
+                            c.paragraph_index = para_indices[located]
+                        else:
+                            c.paragraph_index = para_indices[0]
+                    all_comments.extend(new_comments)
+                except json.JSONDecodeError:
+                    pass
 
         print(f"    Passage {idx+1}/{len(passages)}: "
               f"{len(new_comments)} comments, "

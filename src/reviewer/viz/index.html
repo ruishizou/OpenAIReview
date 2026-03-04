@@ -651,21 +651,38 @@ function renderMetrics() {
   const m = method.metrics;
   const comments = method.comments;
 
+  let parts = [];
+
+  // Model info (from method-level data)
+  if (method.model) {
+    parts.push(`<span class="metric">Model <strong>${escapeHtml(method.model)}</strong></span>`);
+  }
+  if (method.prompt_tokens !== undefined) {
+    const totalTokens = (method.prompt_tokens + method.completion_tokens).toLocaleString();
+    parts.push(`<span class="metric">Tokens <strong>${totalTokens}</strong></span>`);
+  }
+  if (method.cost_usd !== undefined) {
+    parts.push(`<span class="metric">Cost <strong>$${method.cost_usd.toFixed(2)}</strong></span>`);
+  }
+  if (parts.length > 0) {
+    parts.push(`<span class="metric-divider"></span>`);
+  }
+
+  // Comment count
+  parts.push(`<span class="metric"><strong>${comments.length}</strong> comments</span>`);
+
   if (!m) {
-    bar.innerHTML = `<span class="metric"><strong>${comments.length}</strong> comments</span>`;
+    bar.innerHTML = parts.join('');
     return;
   }
 
-  let parts = [];
   if (m.num_predicted !== undefined) {
     parts.push(`<span class="metric">Predicted <strong>${m.num_predicted}</strong></span>`);
   }
   if (m.num_ground_truth !== undefined) {
     parts.push(`<span class="metric">Refine <strong>${m.num_ground_truth}</strong></span>`);
   }
-  if (parts.length > 0) {
-    parts.push(`<span class="metric-divider"></span>`);
-  }
+  parts.push(`<span class="metric-divider"></span>`);
   if (m.recall_llm !== undefined) {
     parts.push(`<span class="metric">LLM Recall <strong>${(m.recall_llm * 100).toFixed(1)}%</strong></span>`);
   }
@@ -759,17 +776,6 @@ function renderComments() {
   if (!method) { panel.innerHTML = '<div class="empty-state">No data for this method.</div>'; return; }
 
   let html = '';
-
-  if (method.model || method.cost_usd !== undefined) {
-    let badgeParts = [];
-    if (method.model) badgeParts.push(`Model: ${escapeHtml(method.model)}`);
-    if (method.prompt_tokens !== undefined) {
-      const totalTokens = (method.prompt_tokens + method.completion_tokens).toLocaleString();
-      badgeParts.push(`Tokens: ${totalTokens}`);
-    }
-    if (method.cost_usd !== undefined) badgeParts.push(`Cost: $${method.cost_usd.toFixed(2)}`);
-    html += `<div class="model-badge">${badgeParts.join(' &nbsp;·&nbsp; ')}</div>`;
-  }
 
   if (method.overall_feedback) {
     html += `<div class="overall-feedback"><h3>Overall Feedback</h3>${renderMarkdownWithMath(method.overall_feedback)}</div>`;

@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import date
 
 from .client import chat
 from .models import ReviewResult
@@ -10,6 +11,7 @@ from .utils import count_tokens, locate_comment_in_document, parse_comments_from
 
 DEEP_CHECK_PROMPT = """\
 You are a thoughtful reviewer checking a passage from an academic paper. \
+Today's date is {current_date}. \
 Engage deeply with the material. For each potential issue, first try to understand the authors' \
 intent and check whether your concern is resolved by context before flagging it.
 
@@ -159,32 +161,36 @@ def review_local(
         para_indices, chunk_text = chunks[chunk_idx]
         context = get_chunk_window_context(chunks, chunk_idx, window=window_size)
 
-        prompt = DEEP_CHECK_PROMPT.format(context=context, passage=chunk_text)
+        prompt = DEEP_CHECK_PROMPT.format(context=context, passage=chunk_text, current_date=date.today().isoformat())
         response, usage = chat(
             messages=[{"role": "user", "content": prompt}],
             model=model,
-            max_tokens=4096,
+            max_tokens=16384,
             reasoning_effort=reasoning_effort,
         )
         result.raw_responses.append(response)
         result.total_prompt_tokens += usage["prompt_tokens"]
         result.total_completion_tokens += usage["completion_tokens"]
 
-        arr_match = re.search(r"\[.*\]", response, re.DOTALL)
-        if arr_match:
-            try:
-                items = json.loads(arr_match.group(0))
-                new_comments = parse_comments_from_list(items)
-                chunk_paras = [paragraphs[i] for i in para_indices]
-                for c in new_comments:
-                    located = locate_comment_in_document(c.quote, chunk_paras)
-                    if located is not None and located < len(para_indices):
-                        c.paragraph_index = para_indices[located]
-                    else:
-                        c.paragraph_index = para_indices[0]
-                all_comments.extend(new_comments)
-            except json.JSONDecodeError:
-                pass
+        if not response.strip():
+            print(f"    WARNING: Empty response for chunk {chunk_idx+1}/{len(chunks)} "
+                  f"(model={model}). No comments extracted from this chunk.")
+        else:
+            arr_match = re.search(r"\[.*\]", response, re.DOTALL)
+            if arr_match:
+                try:
+                    items = json.loads(arr_match.group(0))
+                    new_comments = parse_comments_from_list(items)
+                    chunk_paras = [paragraphs[i] for i in para_indices]
+                    for c in new_comments:
+                        located = locate_comment_in_document(c.quote, chunk_paras)
+                        if located is not None and located < len(para_indices):
+                            c.paragraph_index = para_indices[located]
+                        else:
+                            c.paragraph_index = para_indices[0]
+                    all_comments.extend(new_comments)
+                except json.JSONDecodeError:
+                    pass
 
         print(f"    Chunk {chunk_idx+1}/{len(chunks)}: {len(all_comments)} comments so far")
 
