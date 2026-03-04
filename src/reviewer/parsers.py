@@ -194,6 +194,11 @@ def _parse_tex(path: Path) -> tuple[str, str]:
     title_match = re.search(r"\\title\{([^}]+)\}", text)
     if title_match:
         title = title_match.group(1).strip()
+        # Clean common LaTeX artifacts from title
+        title = re.sub(r"\\\\", " ", title)  # line breaks
+        title = re.sub(r"\\[a-zA-Z]+\{([^}]*)\}", r"\1", title)  # \textbf{X} → X
+        title = re.sub(r"[{}]", "", title)  # stray braces
+        title = re.sub(r"\s+", " ", title).strip()
 
     if not title:
         for line in text.split("\n"):
