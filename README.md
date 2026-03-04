@@ -1,5 +1,7 @@
 # OpenAIReview
 
+[![PyPI version](https://img.shields.io/pypi/v/openaireview.svg)](https://pypi.org/project/openaireview/)
+
 AI-powered academic paper reviewer that detects technical and logical errors using LLMs.
 
 ## Installation
@@ -10,6 +12,8 @@ uv pip install openaireview
 
 For development:
 ```bash
+git clone https://github.com/ChicagoHAI/OpenAIReview.git
+cd OpenAIReview
 uv pip install -e .
 ```
 
