@@ -62,23 +62,21 @@ openaireview serve
 
 ## Claude Code Skill
 
-If you use [Claude Code](https://claude.ai/code), a deep-review skill is bundled in this repo. It runs a multi-agent pipeline — one sub-agent per paper section plus cross-cutting agents — and produces severity-tiered findings (major / moderate / minor).
+A deep-review skill is bundled with the package. It runs a multi-agent pipeline — one sub-agent per paper section plus cross-cutting agents — and produces severity-tiered findings (major / moderate / minor).
 
-**Prerequisites:** Clone the repo and open it in Claude Code. No extra API keys needed beyond what Claude Code uses.
+Install once:
 
-**Usage** — just type in Claude Code:
+```bash
+pip install openaireview
+openaireview install-skill
+```
+
+Then in any Claude Code project:
 
 ```
 /openaireview paper.pdf
 /openaireview https://arxiv.org/abs/2602.18458
 ```
-
-Claude Code will:
-1. Parse the paper and split it into sections
-2. Read the full text and build a structured summary (Pass A)
-3. Launch 6–9 parallel sub-agents for section-level and cross-cutting review (Pass B)
-4. Consolidate, deduplicate, and tier findings
-5. Present the review and save results to `./review_results/` for `openaireview serve`
 
 ## CLI Reference
 
