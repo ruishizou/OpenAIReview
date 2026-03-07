@@ -139,6 +139,22 @@ Then in any Claude Code project:
 
 Finally, run `openaireview serve` to see results.
 
+## Development
+
+Install with dev dependencies (includes pytest):
+
+```bash
+uv pip install -e ".[dev]"
+```
+
+Run tests:
+
+```bash
+pytest tests/
+```
+
+Integration tests that call the API require `OPENROUTER_API_KEY` and are skipped automatically when it's not set.
+
 ## Benchmarks
 
 Benchmark data and experiment scripts are in `benchmarks/`. See `benchmarks/REPORT.md` for results.
