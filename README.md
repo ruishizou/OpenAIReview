@@ -163,3 +163,7 @@ Integration tests that call the API require `OPENROUTER_API_KEY` and are skipped
 ## Benchmarks
 
 Benchmark data and experiment scripts are in `benchmarks/`. See `benchmarks/REPORT.md` for results.
+
+## Related Resources
+
+- [AI-research-feedback](https://github.com/claesbackman/AI-research-feedback) 
