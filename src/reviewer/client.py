@@ -12,30 +12,26 @@ try:
 except ImportError:
     pass
 
-# Provider configs: (env_var, base_url or None for default, model_prefix_to_strip)
+# Provider configs: (env_var, base_url or None for default, provider_name, model_prefix_to_strip)
 PROVIDERS = [
-    ("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1", None),
-    ("OPENAI_API_KEY", None, None),
-    ("ANTHROPIC_API_KEY", "https://api.anthropic.com/v1/", "anthropic/"),
-    ("GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/", "google/"),
+    ("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1", "openrouter", None),
+    ("OPENAI_API_KEY", None, "openai", None),
+    ("ANTHROPIC_API_KEY", "https://api.anthropic.com/v1/", "anthropic", "anthropic/"),
+    ("GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini", "google/"),
 ]
 
 
-def get_client() -> tuple[OpenAI, str | None]:
-    """Return (client, prefix_to_strip) for the first available API key.
-
-    prefix_to_strip: if set, strip this prefix from model names before calling
-    the native API (e.g. "anthropic/claude-opus-4-6" -> "claude-opus-4-6").
-    """
-    for env_var, base_url, prefix in PROVIDERS:
+def get_client() -> tuple[OpenAI, str, str | None]:
+    """Return (client, provider_name, prefix_to_strip) for the first available API key."""
+    for env_var, base_url, provider, prefix in PROVIDERS:
         api_key = os.environ.get(env_var)
         if api_key:
             kwargs = {"api_key": api_key}
             if base_url:
                 kwargs["base_url"] = base_url
-            provider_name = env_var.replace("_API_KEY", "").replace("_", " ").title()
-            print(f"  Using {provider_name} API")
-            return OpenAI(**kwargs), prefix
+            display = env_var.replace("_API_KEY", "").replace("_", " ").title()
+            print(f"  Using {display} API")
+            return OpenAI(**kwargs), provider, prefix
 
     print(
         "Error: No API key found.\n\n"
@@ -63,6 +59,22 @@ EMPTY_RESPONSE_MAX_RETRIES = 3
 EMPTY_RESPONSE_TOKEN_MULTIPLIER = 2
 
 
+def _apply_reasoning(kwargs: dict, provider: str, reasoning_effort: str, max_tokens: int) -> None:
+    """Add provider-specific reasoning/thinking parameters to the API call."""
+    ratio = REASONING_EFFORT_RATIO.get(reasoning_effort, 0.5)
+    budget = max(int(max_tokens * ratio), 1024)
+
+    if provider == "openrouter":
+        kwargs["extra_body"] = {"reasoning": {"max_tokens": budget}}
+    elif provider == "anthropic":
+        kwargs["extra_body"] = {"thinking": {"type": "enabled", "budget_tokens": budget}}
+    elif provider == "openai":
+        # OpenAI uses reasoning_effort directly as a string
+        kwargs["reasoning_effort"] = reasoning_effort
+    elif provider == "gemini":
+        kwargs["extra_body"] = {"thinking": {"type": "enabled", "budget_tokens": budget}}
+
+
 def chat(
     messages: list[dict],
     model: str = "anthropic/claude-opus-4-6",
@@ -82,7 +94,7 @@ def chat(
     If the response is empty (e.g. reasoning consumed all tokens), retries
     with doubled max_tokens up to EMPTY_RESPONSE_MAX_RETRIES times.
     """
-    client, prefix_to_strip = get_client()
+    client, provider, prefix_to_strip = get_client()
     api_model = model
     if prefix_to_strip and api_model.startswith(prefix_to_strip):
         api_model = api_model[len(prefix_to_strip):]
@@ -100,15 +112,8 @@ def chat(
                 )
                 if temperature is not None:
                     kwargs["temperature"] = temperature
-                if reasoning_effort is not None:
-                    if reasoning_effort == "none":
-                        pass
-                    else:
-                        ratio = REASONING_EFFORT_RATIO.get(reasoning_effort, 0.5)
-                        budget = max(int(current_max_tokens * ratio), 1024)
-                        kwargs["extra_body"] = {
-                            "reasoning": {"max_tokens": budget}
-                        }
+                if reasoning_effort is not None and reasoning_effort != "none":
+                    _apply_reasoning(kwargs, provider, reasoning_effort, current_max_tokens)
                 resp = client.chat.completions.create(**kwargs)
                 usage = {
                     "prompt_tokens": resp.usage.prompt_tokens if resp.usage else 0,
