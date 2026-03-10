@@ -166,4 +166,9 @@ Benchmark data and experiment scripts are in `benchmarks/`. See `benchmarks/REPO
 
 ## Related Resources
 
-- [AI-research-feedback](https://github.com/claesbackman/AI-research-feedback) 
+- [AI-research-feedback](https://github.com/claesbackman/AI-research-feedback)
+- [OpenEvalProject](https://github.com/OpenEvalProject)
+
+## License
+
+[MIT](LICENSE)
