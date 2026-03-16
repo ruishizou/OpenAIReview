@@ -28,8 +28,15 @@ uv venv && uv pip install -e .
 
 ## Updates
 
-- **v0.2.3** — Table/figure parsing from arXiv HTML, pymupdf4llm as default PDF fallback, mobile-responsive viz, collapsible resolved comments.
-- **v0.2.0** — Multi-provider routing (OpenRouter/OpenAI/Anthropic/Gemini/Mistral), Claude Code skill (`/openaireview`), resolve/filter comments in viz.
+- `--max-pages` and `--max-tokens` to limit input size and save OCR cost
+- Mistral OCR and DeepSeek OCR as optional PDF engines (`pip install openaireview[mistral]`)
+- `openaireview extract` subcommand for two-stage OCR + review workflow
+- Multi-provider routing: OpenRouter, OpenAI, Anthropic, Gemini, Mistral (`--provider`)
+- Table and figure extraction from arXiv HTML (tables as markdown)
+- pymupdf4llm + GNN layout as default PDF fallback (replaces raw PyMuPDF)
+- Mobile-responsive visualization UI
+- Collapsible resolved comments in viz
+- Claude Code skill (`/openaireview`) with multi-agent pipeline
 
 ### PDF parsing engines (optional)
 
@@ -95,6 +102,8 @@ Review an academic paper for technical and logical issues. Accepts a local file 
 | `--model` | `anthropic/claude-opus-4-6` | Model to use |
 | `--provider` | (auto) | LLM provider: `openrouter`, `openai`, `anthropic`, `gemini`, `mistral` |
 | `--ocr` | (auto) | PDF OCR engine: `mistral`, `deepseek`, `marker`, `pymupdf` |
+| `--max-pages` | (all) | Only process first N pages of a PDF (saves OCR cost) |
+| `--max-tokens` | (all) | Truncate input text to first N tokens before review |
 | `--output-dir` | `./review_results` | Directory for output JSON files |
 | `--name` | (from filename) | Paper slug name |
 
