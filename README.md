@@ -13,6 +13,11 @@ uv venv && uv pip install openaireview
 # or: pip install openaireview
 ```
 
+For fast PDF processing (requires `MISTRAL_API_KEY`):
+```bash
+pip install openaireview[mistral]
+```
+
 For development:
 ```bash
 git clone https://github.com/ChicagoHAI/OpenAIReview.git
@@ -20,6 +25,11 @@ cd OpenAIReview
 uv venv && uv pip install -e .
 # or: pip install -e .
 ```
+
+## Updates
+
+- **v0.2.3** — Table/figure parsing from arXiv HTML, pymupdf4llm as default PDF fallback, mobile-responsive viz, collapsible resolved comments.
+- **v0.2.0** — Multi-provider routing (OpenRouter/OpenAI/Anthropic/Gemini/Mistral), Claude Code skill (`/openaireview`), resolve/filter comments in viz.
 
 ### PDF parsing engines (optional)
 
@@ -167,19 +177,6 @@ Then in any Claude Code project:
 ```
 
 Finally, run `openaireview serve` to see results.
-
-## Updates
-
-### v0.2.3 (latest)
-- **Table & figure parsing** — arXiv HTML tables are converted to markdown tables; figures retain caption text. Improves review quality for data-heavy papers.
-- **pymupdf4llm as default PDF fallback** — replaced raw PyMuPDF with pymupdf4llm + GNN layout analysis for better reading order and table structure.
-- **Mobile-responsive visualization** — the review UI now works on phones and tablets.
-- **Collapsible resolved comments** — mark comments as resolved in the viz UI; resolved comments collapse by default.
-
-### v0.2.0
-- **Multi-provider routing** — native support for OpenRouter, OpenAI, Anthropic, Gemini, and Mistral via `--provider` flag or `REVIEW_PROVIDER` env var. Auto-detects from API keys.
-- **Claude Code skill** — `/openaireview` slash command runs a multi-agent review pipeline with section-level sub-agents. Install with `openaireview install-skill`.
-- **Resolve/filter comments** — track which review comments have been addressed in the visualization UI.
 
 ## Development
 
